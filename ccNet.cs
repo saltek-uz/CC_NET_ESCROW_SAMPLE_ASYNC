@@ -6,8 +6,9 @@ using System.Text;
 
 namespace CC_NET_ESCROW_SAMPLE_ASYNC
 {
-    enum vldStates                  // enum of all possible states to translate thru CCNet protocol
+    internal class vldStates                  // enum of all possible states to translate thru CCNet protocol
     {
+        public const byte
         state_powerUp       = 0x10,
         state_powerUpBV     = 0x11,
         state_powerUpBS     = 0x12,
@@ -29,108 +30,56 @@ namespace CC_NET_ESCROW_SAMPLE_ASYNC
         state_failure       = 0x47,      
         state_escrowPos     = 0x80,
         state_escrowStd     = 0x81,
-        state_escrowRtn     = 0x82
+        state_escrowRtn     = 0x82;
+    };
+
+    internal class cmdList                    // enum of all possible commands to translate thru CCNet protocol
+    {
+        public const byte
+        ccnetCmdACK         = 0x00,
+        ccnetCmdNACK        = 0xFF,
+        ccnetCmdReset       = 0x30,
+        ccnetCmdStat        = 0x31,
+        ccnetCmdSsecure     = 0x32,
+        ccnetCmdPoll        = 0x33,
+        ccnetCmdEnBills     = 0x34,
+        ccnetCmdStack       = 0x35,
+        ccnetCmdReturn      = 0x36,
+        ccnetCmdID          = 0x37,
+        ccnetCmdHold        = 0x38,
+        ccnetCmdsetBcPrm    = 0x39,
+        ccnetCmdExtBcData   = 0x3A,
+        ccnetCmdTable       = 0x41,
+        ccnetCmdDwnLoad     = 0x50,
+        ccnetCmdCRC32       = 0x51,
+        ccnetCmdStatic      = 0x60;
     };
 
 
-    public class ccNetPortWork
+
+    internal static class ccNet
     {
 
-        public string searchBV()
-        {
-            string s = string.Empty ;
-
-
-            string[] ports = SerialPort.GetPortNames();
-
-            foreach (string port in ports) 
-            {
-                try
-                { 
-                    SerialPort _tmpPort = new SerialPort(port,9600,Parity.None,8, StopBits.One);
-                    _tmpPort.Open();
-                    // find cash
-                    _tmpPort.Close();
-                }
-                catch { continue; };
-            
-            }
-
-            return s ;
-        }
-
-
-        public bool sendCmd(SerialPort sPort, byte[] data)
-        {
-            try
-            {
-                if (sPort.IsOpen) 
-                {
-                    sPort.Write(data, 0, data.Length);
-                }
-                else return false;
-            }
-            catch { return false; }
-
-            return true;
-        }
-
-
-        public byte[] receiveCmd(SerialPort sPort)
-        {
-
-            try
-            {
-                if (sPort.IsOpen)
-                {
-                    int dataLenth = sPort.BytesToRead;
-                    if (dataLenth == 0) return null ;
-                    byte[] data = new byte[dataLenth];
-                    sPort.Read(data,0,dataLenth);
-                    return data ;
-                };
-            
-            }
-            catch {}
-
-            return null ;
-        }
-
-
-    }
-
-
-
-    internal class ccNet
-    {
-
-        ccNetLowLevel cLL = new ccNetLowLevel();
-
-        public int glState = 0;
-        public int glDrops = 0;
-        
-
-
-        public byte[] prepareCmd(byte cmd) // однобайтовые комманды
+        public static byte[] prepareCmd(byte cmd) // однобайтовые комманды
         {
             byte[] arr = new byte[1];
             arr[0] = cmd;
-            return cLL.cmdPocketAsmbr(arr);
+            return ccNetLowLevel.cmdPocketAsmbr(arr);
         }
 
-        public byte[] prepareCmd(byte cmd, byte[] args) // с аргументом (Enable, Disable, Secure)
+        public static byte[] prepareCmd(byte cmd, byte[] args) // с аргументом (Enable, Disable, Secure)
         {
             byte[] arr = new byte[args.Length+1];
             Array.ConstrainedCopy(args, 0, arr, 1, args.Length);
             arr[0] = cmd;
-            return cLL.cmdPocketAsmbr(arr);
+            return ccNetLowLevel.cmdPocketAsmbr(arr);
         }
 
-        public ccResponse extractReceivedData(byte[] data) // Обдирает входящий пакет от сопроводиловки
+        public static ccResponse extractReceivedData(byte[] data) // Обдирает входящий пакет от сопроводиловки
         {
             ccResponse cRp = null;
 
-            if (!cLL.isPocketOK(data)) return null;
+            if (!ccNetLowLevel.isPocketOK(data)) return null;
 
             byte[] body = new byte[data[2] - 5];
 
@@ -145,6 +94,42 @@ namespace CC_NET_ESCROW_SAMPLE_ASYNC
             } 
 
             return cRp;
+        }
+
+        public static bool sendCmd(SerialPort sPort, byte[] data)
+        {
+            try
+            {
+                if (sPort.IsOpen)
+                {
+                    sPort.Write(data, 0, data.Length );
+                }
+                else return false;
+            }
+            catch { return false; }
+
+            return true;
+        }
+
+
+        public static byte[] receiveCmd(SerialPort sPort)
+        {
+
+            try
+            {
+                if (sPort.IsOpen)
+                {
+                    int dataLenth = sPort.BytesToRead;
+                    if (dataLenth == 0) return null;
+                    byte[] data = new byte[dataLenth];
+                    sPort.Read(data, 0, dataLenth);
+                    return data;
+                };
+
+            }
+            catch { }
+
+            return null;
         }
 
     }
@@ -184,10 +169,10 @@ namespace CC_NET_ESCROW_SAMPLE_ASYNC
 
 
 
-    public class ccNetLowLevel
+    public static class ccNetLowLevel
     {
         const ushort POLYNOMIAL = 0x8408;
-        public ushort GetCRC16(byte[] bufData, int sizeData)
+        public static ushort GetCRC16(byte[] bufData, int sizeData)
         {
             ushort TmpCRC, i;
 
@@ -205,7 +190,7 @@ namespace CC_NET_ESCROW_SAMPLE_ASYNC
         }
 
 
-        public byte[] cmdPocketAsmbr(byte[] cmd) // добавляет CRC16 в конец пакета для передачи, а также суффикс и длину
+        public static byte[] cmdPocketAsmbr(byte[] cmd) // добавляет CRC16 в конец пакета для передачи, а также суффикс и длину
         {
             int arrLen = cmd.Length;
 
@@ -226,7 +211,7 @@ namespace CC_NET_ESCROW_SAMPLE_ASYNC
             return cc;
         }
 
-        public bool isPocketOK(byte[] cmd)
+        public static bool isPocketOK(byte[] cmd)
         {
             int arrLen = cmd.Length;
 
