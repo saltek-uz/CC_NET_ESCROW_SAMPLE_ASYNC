@@ -62,22 +62,11 @@ namespace CC_NET_ESCROW_SAMPLE_ASYNC
             _serialPort = new SerialPort("COM1", 9600, Parity.None, 8, StopBits.One);
         }
 
-        public void onDataReceive(byte[] data)
+        public void onStateReceive(byte state, byte param)
         {
-           MessageBox.Show("Taska - callBack!");  
+            // Here is poll answers processing
 
-        }
 
-        public void onError(byte[] data)
-        {
-            MessageBox.Show("Taska - callBack!");
-        }
-
-        public string onCmdDone()
-        {
-            MessageBox.Show("Taska - callBack!");
-
-            return string.Empty;
         }
 
 
@@ -103,6 +92,9 @@ namespace CC_NET_ESCROW_SAMPLE_ASYNC
                         vldState.lagCounter = 0;
                         vldState.lastState = extrData.cmd;
                         if (extrData.arg is null) vldState.lastParam = 0x00; else vldState.lastParam = extrData.arg[0];
+
+                        onStateReceive(vldState.lastState, vldState.lastParam);
+
                     }
                     catch
                     {
