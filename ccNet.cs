@@ -6,32 +6,6 @@ using System.Text;
 
 namespace CC_NET_ESCROW_SAMPLE_ASYNC
 {
-    internal class vldStates                  // enum of all possible states to translate thru CCNet protocol
-    {
-        public const byte
-        state_powerUp       = 0x10,
-        state_powerUpBV     = 0x11,
-        state_powerUpBS     = 0x12,
-        state_initialize    = 0x13,
-        state_idling        = 0x14,
-        state_accepting     = 0x15,
-        state_stacking      = 0x17,
-        state_returning     = 0x18,
-        state_disabled      = 0x19,
-        state_holding       = 0x1A,
-        state_deviceBusy    = 0x1B,
-        state_rejecting     = 0x1C,
-        state_casseteFull   = 0x41,      
-        state_casseteOP     = 0x42,      
-        state_jammedVLD     = 0x43,      
-        state_jammedCass    = 0x44,     
-        state_cheated       = 0x45,      
-        state_pause         = 0x46,
-        state_failure       = 0x47,      
-        state_escrowPos     = 0x80,
-        state_escrowStd     = 0x81,
-        state_escrowRtn     = 0x82;
-    };
 
     internal class cmdList                    // enum of all possible commands to translate thru CCNet protocol
     {
@@ -83,7 +57,7 @@ namespace CC_NET_ESCROW_SAMPLE_ASYNC
 
             byte[] body = new byte[data[2] - 5];
 
-            Array.ConstrainedCopy(body,0, data, 3, body.Length);
+            Array.ConstrainedCopy( data, 3, body, 0, body.Length);
 
             if (body.Length == 1) cRp = new ccResponse(body[0]);
             else 
